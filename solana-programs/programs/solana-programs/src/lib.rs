@@ -1,10 +1,15 @@
 use anchor_lang::prelude::*;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("AZG9qbzncQcjtb5FZfEqmefHRwGGUJRqpptT1dB3Lci7");
 
 #[program]
 pub mod solana_programs {
     use super::*;
+
+    const MIN_POS: u8 = 0;
+    const MAX_POS: u8 = 99;
+    const MIN_COL: u8 = 0;
+    const MAX_COL: u8 = 255;
 
     pub fn create_pixel(
         ctx: Context<CreatePixel>,
@@ -14,6 +19,27 @@ pub mod solana_programs {
         init_col_g: u8,
         init_col_b: u8
     ) -> Result<()> {
+
+        if pos_x < MIN_POS || pos_x > MAX_POS {
+            return Err(error!(ErrorCode::InvalidXCoordinate));
+        }
+
+        if pos_y < MIN_POS || pos_y > MAX_POS {
+            return Err(error!(ErrorCode::InvalidYCoordinate));
+        }
+
+        if init_col_r < MIN_COL || init_col_r > MAX_COL {
+            return Err(error!(ErrorCode::InvalidRColor));
+        }
+
+        if init_col_g < MIN_COL || init_col_g > MAX_COL {
+            return Err(error!(ErrorCode::InvalidGColor));
+        }
+
+        if init_col_b < MIN_COL || init_col_b > MAX_COL {
+            return Err(error!(ErrorCode::InvalidBColor));
+        }
+
         let pixel = &mut ctx.accounts.pixel;
         pixel.pos_x = pos_x;
         pixel.pos_y = pos_y;
@@ -52,4 +78,22 @@ const COL_LENGTH: usize = 1;
 
 impl Pixel {
     const LEN: usize = DISCRIMINATOR_LENGTH + (2 * POS_LENGTH) + (3 * COL_LENGTH);
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("the given X co-ordinate is not between 0-99")]
+    InvalidXCoordinate,
+
+    #[msg("the given Y co-ordinate is not between 0-99")]
+    InvalidYCoordinate,
+
+    #[msg("the given R color is not between 0-255")]
+    InvalidRColor,
+
+    #[msg("the given R color is not between 0-255")]
+    InvalidGColor,
+
+    #[msg("the given R color is not between 0-255")]
+    InvalidBColor,
 }

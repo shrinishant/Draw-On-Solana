@@ -1,13 +1,13 @@
 [features]
 seeds = false
-[programs.devnet]
-solana_programs = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+[programs.localnet]
+solana_programs = "AZG9qbzncQcjtb5FZfEqmefHRwGGUJRqpptT1dB3Lci7"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "/home/shrinishant/.config/solana/id.json"
 
 [scripts]
