@@ -49,17 +49,58 @@ pub mod solana_programs {
 
         Ok(())
     }
+
+    pub fn update_pixel(
+        ctx: Context<UpdatePixel>,
+        new_col_r: u8,
+        new_col_g: u8,
+        new_col_b: u8
+    ) -> Result<()> {
+        if new_col_r < MIN_COL || new_col_r > MAX_COL {
+            return Err(error!(ErrorCode::InvalidRColor))
+        }
+
+        if new_col_g < MIN_COL || new_col_g > MAX_COL {
+            return Err(error!(ErrorCode::InvalidGColor))
+        }
+
+        if new_col_b < MIN_COL || new_col_b > MAX_COL {
+            return Err(error!(ErrorCode::InvalidBColor))
+        }
+
+        let pixel = &mut ctx.accounts.pixel;
+        pixel.col_r = new_col_r;
+        pixel.col_g = new_col_g;
+        pixel.col_b = new_col_b;
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
+#[instruction(pos_x: u8, pos_y:u8)]
 pub struct CreatePixel<'info> {
-    #[account(init, payer=user, space=Pixel::LEN)]
+    #[account(
+        init, payer=user, space=Pixel::LEN,
+        seeds = [b"pixel".as_ref(), [pos_x, pos_y].as_ref()],
+        bump
+    )]
     pub pixel: Account<'info, Pixel>,
 
     #[account(mut)]
     pub user: Signer<'info>,
 
     pub system_program: Program<'info, System>
+}
+
+#[derive(Accounts)]
+pub struct UpdatePixel<'info> {
+    #[account(
+        mut,
+        seeds = [b"pixel".as_ref(), [pixel.pos_x, pixel.pos_y].as_ref()],
+        bump
+    )]
+    pub pixel: Account<'info, Pixel>
 }
 
 #[account]

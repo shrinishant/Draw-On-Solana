@@ -13,82 +13,143 @@ describe("solana-programs", () => {
   const program = anchor.workspace.SolanaPrograms as Program<SolanaPrograms>;
 
   it("Can create a pixel", async () => {
-    const pixelKeyPair = web3.Keypair.generate()
 
-    await program.methods.createPixel(10, 10, 0, 0, 255)
+    const x = 12
+    const y = 12
+
+    const [pixelPublicKey] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("pixel"), Buffer.from([x, y])],
+      program.programId
+    )
+
+    await program.methods.createPixel(x, y, 0, 0, 255)
             .accounts({
-              pixel: pixelKeyPair.publicKey,
+              //earlier before PDA, we've been generating random public key
+              pixel: pixelPublicKey,
               user: anchorProvider.wallet.publicKey,
               systemProgram: web3.SystemProgram.programId
             })
-            .signers([pixelKeyPair])
             .rpc()
+            .then(() => console.log("created pixel with x: 10"),
+              (e: any) => console.log(e)
+            )
 
-    const storedPixel = await program.account.pixel.fetch(pixelKeyPair.publicKey)
-    assert.equal(storedPixel.posX, 10)
-    assert.equal(storedPixel.posY, 10)
+    const storedPixel = await program.account.pixel.fetch(pixelPublicKey)
+    console.log("first going good", storedPixel)
+    assert.equal(storedPixel.posX, x)
+    assert.equal(storedPixel.posY, y)
     assert.equal(storedPixel.colR, 0)
     assert.equal(storedPixel.colG, 0)
     assert.equal(storedPixel.colB, 255)
   })
 
   it("Does not allow creating a pixel out of bounds", async () => {
-    const pixelKeyPair = web3.Keypair.generate()
+    const x = 0
+    const y = 200
 
-    await program.methods.createPixel(0, 200, 0, 0, 255)
+    const [pixelPublicKey] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("pixel"), Buffer.from([x, y])],
+      program.programId
+    )
+
+    program.methods.createPixel(x, y, 0, 0, 255)
             .accounts({
-              pixel: pixelKeyPair.publicKey,
+              pixel: pixelPublicKey,
               user: anchorProvider.wallet.publicKey,
               systemProgram: web3.SystemProgram.programId
             })
-            .signers([pixelKeyPair])
             .rpc()
-            .then(() => Promise.reject(new Error('Expected to error'))),
+            .then(() => Promise.reject(new Error('Expected to error')),
             (e: anchor.AnchorError) => {
               assert.ok(e.errorLogs.some(log => log.includes('InvalidYCoordinate')
                && log.includes('The given Y co-ordinate is not between 0-99')))
-            }
+            })
   })
 
   it("Does not allow creating the same pixel twice", async () => {
-    const x = 20;
-    const y = 20;
+    const x = 10;
+    const y = 10;
 
-    const pixelKeyPair1 = web3.Keypair.generate()
+    const [pixelPublicKey] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("pixel"), Buffer.from([x, y])],
+      program.programId
+    )
 
-    // ye pass hona chahiye
-    await program.methods.createPixel(x, y, 0, 0, 255)
+    program.methods.createPixel(x, y, 0, 0, 255)
             .accounts({
-              pixel: pixelKeyPair1.publicKey,
+              pixel: pixelPublicKey,
               user: anchorProvider.wallet.publicKey,
               systemProgram: web3.SystemProgram.programId
             })
-            .signers([pixelKeyPair1])
-            .rpc()
-
-    const pixelKeyPair2 = web3.Keypair.generate()
-
-    // ye fail hona chahiye
-    await program.methods.createPixel(x, y, 0, 0, 255)
-            .accounts({
-              pixel: pixelKeyPair2.publicKey,
-              user: anchorProvider.wallet.publicKey,
-              systemProgram: web3.SystemProgram.programId
-            })
-            .signers([pixelKeyPair2])
-            .postInstructions([
-              web3.SystemProgram.transfer({
-                fromPubkey: anchorProvider.wallet.publicKey,
-                toPubkey: anchorProvider.wallet.publicKey,
-                lamports: 1
-              })
-            ])
             .rpc()
             .then(
               () => Promise.reject(new Error('Expected to error!')),
               (e: web3.SendTransactionError) => {
-                console.error(e.logs)
+                console.log("iniside error already in use")
+                assert.ok(e.logs.some(log => log.includes(pixelPublicKey.toBase58()) && log.includes("Already in Use")))
               }
             )
+            
+  })
+
+  it("Does not allow passing an incorrect address",async () => {
+    //Generating PDA for (0, 0)
+    const [pixelPublicKey] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("pixel"), Buffer.from([0, 0])],
+      program.programId
+    )
+
+    // Now attempt to use it to create for (30, 30)
+    await program.methods.createPixel(30, 30, 0, 0, 255)
+          .accounts({
+            pixel: pixelPublicKey,
+            user: anchorProvider.wallet.publicKey,
+            systemProgram: web3.SystemProgram.programId
+          })
+          .rpc()
+          .then(
+            () => Promise.reject(new Error("Expected to error!")),
+            (e: web3.SendTransactionError) => {
+              const expectedError = `${pixelPublicKey.toBase58()}'s signer privilege escalated`
+              console.log("not passing inco address 53")
+              assert.ok(e.logs.some(log => log === expectedError))
+            }
+          )
+
+  })
+
+  it("Can update a created Pixel", async () => {
+    const x = 50
+    const y = 50
+
+    const [pixelPublicKey] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from('pixel'), Buffer.from([x, y])],
+      program.programId
+    )
+
+    program.methods.createPixel(x, y, 0, 0, 255)
+      .accounts({
+        pixel: pixelPublicKey,
+        user: anchorProvider.wallet.publicKey,
+        systemProgram: web3.SystemProgram.programId
+      })
+      .rpc()
+
+      console.log("update transaction going goog")
+      const storedPixelX = await program.account.pixel.fetch(pixelPublicKey)
+      console.log(storedPixelX)
+
+    await program.methods.updatePixel(255, 0, 0)
+          .accounts({
+            pixel: pixelPublicKey
+          })
+          .rpc()
+
+    const storedPixel = await program.account.pixel.fetch(pixelPublicKey)
+    assert.equal(storedPixel.posX, x)
+    assert.equal(storedPixel.posY, y)
+    assert.equal(storedPixel.colR, 255)
+    assert.equal(storedPixel.colG, 0)
+    assert.equal(storedPixel.colB, 0)
   })
 });
