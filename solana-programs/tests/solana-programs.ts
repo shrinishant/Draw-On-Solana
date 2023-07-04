@@ -14,8 +14,8 @@ describe("solana-programs", () => {
 
   it("Can create a pixel", async () => {
 
-    const x = 12
-    const y = 12
+    const x = 13
+    const y = 13
 
     const [pixelPublicKey] = web3.PublicKey.findProgramAddressSync(
       [Buffer.from("pixel"), Buffer.from([x, y])],
@@ -119,15 +119,15 @@ describe("solana-programs", () => {
   })
 
   it("Can update a created Pixel", async () => {
-    const x = 50
-    const y = 50
+    const x = 55
+    const y = 55
 
     const [pixelPublicKey] = web3.PublicKey.findProgramAddressSync(
       [Buffer.from('pixel'), Buffer.from([x, y])],
       program.programId
     )
 
-    program.methods.createPixel(x, y, 0, 0, 255)
+    await program.methods.createPixel(x, y, 0, 0, 255)
       .accounts({
         pixel: pixelPublicKey,
         user: anchorProvider.wallet.publicKey,
@@ -151,5 +151,75 @@ describe("solana-programs", () => {
     assert.equal(storedPixel.colR, 255)
     assert.equal(storedPixel.colG, 0)
     assert.equal(storedPixel.colB, 0)
+  })
+
+  it("Emits an event when a pixel is created", async () => {
+    let events = []
+    const listener = program.addEventListener('PixelChanged', (event: any) => {
+      events.push(event)
+    })
+
+    const x = 57
+    const y = 57
+
+    const [pixelPublicKey] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("pixel"), Buffer.from([x, y])],
+      program.programId
+    )
+
+    await program.methods.createPixel(x, y, 0, 0, 255)
+          .accounts({
+            pixel: pixelPublicKey,
+            user: anchorProvider.wallet.publicKey,
+            systemProgram: web3.SystemProgram.programId
+          })
+          .rpc()
+          .then(() => console.log("successfull emit event"),
+          (e) => {
+            console.log(e, "not successfully emit event")
+          })
+
+    assert.equal(events.length, 1)
+    const event = events[0]
+
+    assert.equal(event.posX, x)
+    assert.equal(event.posY, y)
+    assert.equal(event.colR, 0)
+    assert.equal(event.colG, 0)
+    assert.equal(event.colB, 255)
+
+    program.removeEventListener(listener)
+  })
+
+  it("Emits an event when a pixel is updated", async () => {
+    let events = []
+    const listener = program.addEventListener('PixelChanged', (event: any) => {
+      events.push(event)
+    })
+
+    const x = 57
+    const y = 57
+
+    const [pixelPublicKey] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("pixel"), Buffer.from([x, y])],
+      program.programId
+    )
+
+    await program.methods.updatePixel(255, 0, 0)
+          .accounts({
+            pixel: pixelPublicKey
+          })
+          .rpc()
+
+    assert.equal(events.length, 1)
+    const event = events[0]
+
+    assert.equal(event.posX, x)
+    assert.equal(event.posY, y)
+    assert.equal(event.colR, 255)
+    assert.equal(event.colG, 0)
+    assert.equal(event.colB, 0)
+
+    program.removeEventListener(listener)
   })
 });
