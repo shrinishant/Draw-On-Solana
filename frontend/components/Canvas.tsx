@@ -1,8 +1,30 @@
 import clsx from "clsx"
 import Pixel from "./Pixel"
+import {Program} from "@project-serum/anchor"
+import { useEffect } from "react"
+import { SolanaPrograms } from "@/idl/drawOnSolana"
 
-export default function Canvas() {
-    const disabled = false
+interface Props {
+    program: Program<SolanaPrograms> | undefined
+}
+
+export default function Canvas({program} : Props) {
+    const disabled = !program
+
+    const fetchPixels =async () => {
+        if(program){
+            try {
+                const pixels = await program.account.pixel.all()
+                console.log(pixels)
+            } catch (e) {
+                console.log(e)
+            }
+        }
+    }
+
+    useEffect(() => {
+        fetchPixels()
+    }, [program])
 
     return (
         <div className={clsx(disabled && "opacity-25 cursor-not-allowed")}>
@@ -17,6 +39,7 @@ export default function Canvas() {
                                             posX={x}
                                             posY={y}
                                             key={x}
+                                            program={program}
                                         />
                                     )
                                 })}

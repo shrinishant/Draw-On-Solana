@@ -1,6 +1,7 @@
 test-ledger
 
 # dependencies
+node_modules
 frontend/node_modules
 frontend/.pnp
 frontend/.pnp.js
@@ -34,3 +35,4 @@ frontend/.vercel
 # typescript
 frontend/*.tsbuildinfo
 frontend/next-env.d.ts
+node_modules
