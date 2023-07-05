@@ -7,7 +7,7 @@ solana_programs = "AZG9qbzncQcjtb5FZfEqmefHRwGGUJRqpptT1dB3Lci7"
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "/home/shrinishant/.config/solana/id.json"
 
 [scripts]

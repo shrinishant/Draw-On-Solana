@@ -7,6 +7,7 @@ import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adap
 
 // require('@solana/wallet-adapter-react-ui/styles.css')
 import '@solana/wallet-adapter-react-ui/styles.css'
+import { clusterApiUrl } from '@solana/web3.js'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -21,7 +22,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
 
-  const endpoint = 'http://localhost:8899'
+  // const endpoint = 'http://localhost:8899'
+  const endpoint = clusterApiUrl('devnet')
 
   const wallets = [
     new PhantomWalletAdapter(),
