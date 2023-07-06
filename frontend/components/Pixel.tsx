@@ -26,25 +26,33 @@ export default function Pixel({ posX, posY, program, pixelData, selectedColor }:
           return pixelPublicKey
         }
       }
+
+      const updatePixel =async () => {
+        await program!.methods
+              .updatePixel(selectedColor.r, selectedColor.g, selectedColor.b)
+              .accounts({
+                pixel: getPixelAddress()
+              })
+              .rpc()
+      }
     
       const createPixel = async () => {
-        if(program !== undefined){
-          await program.methods
+        console.log(getPixelAddress(), "pixelAddress")
+        await program!.methods
             .createPixel(posX, posY, selectedColor.r, selectedColor.g, selectedColor.b)
             .accounts({
               pixel: getPixelAddress(),
-              user: program.provider.publicKey,
+              user: program!.provider.publicKey,
               systemProgram: SystemProgram.programId,
             })
             .rpc();
-        }
       }
 
     return (
         <td
             className="h-4 min-w-[1rem]"
             style={{backgroundColor: color}}
-            onClick={createPixel}
+            onClick={pixelData ? updatePixel : createPixel}
         />
     )
 }
