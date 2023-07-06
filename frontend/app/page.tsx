@@ -49,7 +49,7 @@ export default function Home() {
           </NoSsr>
         </div>
         <ColorSelector selectedColor={selectedColor} setSelectedColor={setSelectedColor} />
-        <Canvas program={anchorProgram} />
+        <Canvas program={anchorProgram} selectedColor={selectedColor} />
       </main>
     </div>
     </>
